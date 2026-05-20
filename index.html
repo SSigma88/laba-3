@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>lab3</title>
+    <title>WebXR Lithium Atom - Lab 3</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script type="importmap">
     {
@@ -25,43 +25,46 @@
         let electrons = [];
 
         const init = () => {
+            // 1. Создаем сцену
             scene = new THREE.Scene();
 
+            // 2. Настраиваем камеру
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
+            // 3. Инициализируем рендерер с поддержкой XR и прозрачным фоном
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            
-            renderer.xr.enabled = true;
+            renderer.xr.enabled = true; // Включаем WebXR
             document.body.appendChild(renderer.domElement);
 
+            // 4. Добавляем нативную кнопку запуска AR
             document.body.appendChild(ARButton.createButton(renderer));
 
+            // Добавляем освещение
             const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
             scene.add(light);
 
+            // Создаем общую группу для атома
             const atomGroup = new THREE.Group();
             atomGroup.scale.set(0.15, 0.15, 0.15); 
             
-           
+            // Позиционируем атом в 1.5 метрах перед пользователем
             atomGroup.position.set(0, 0, -1.5); 
             scene.add(atomGroup);
 
-           
-            const textureLoader = new THREE.TextureLoader();
-            const waterNormals = textureLoader.load('waternormals.jpg');
-
+            // Создаем ядро атома (материал изменен на стандартный без текстуры)
             const coreGeom = new THREE.SphereGeometry(0.7, 32, 32);
             const coreMat = new THREE.MeshStandardMaterial({
-                color: 0x8888ff,
-                emissive: 0x222244,
-                normalMap: waterNormals,
-                normalScale: new THREE.Vector2(1, 1),
+                color: 0x4444ff,
+                emissive: 0x111133,
+                roughness: 0.2,
+                metalness: 0.5
             });
             const core = new THREE.Mesh(coreGeom, coreMat);
             atomGroup.add(core);
 
+            // Функция генерации электронных систем (сохранена твоя логика)
             const createElectronSystem = (color, tiltZ, speed) => {
                 const tiltGroup = new THREE.Group();
                 tiltGroup.rotation.z = tiltZ;
@@ -89,6 +92,7 @@
                 return { pivot: electronPivot, speed: speed };
             };
 
+            // Три электрона лития
             electrons = [
                 createElectronSystem(0xff0000, 0, 0.02),                   
                 createElectronSystem(0x0000ff, Math.PI / 3, 0.015),        
@@ -97,6 +101,7 @@
 
             window.addEventListener('resize', onWindowResize);
 
+            // Запуск цикла анимации через встроенный WebXR-цикл рендерера
             renderer.setAnimationLoop(animate);
         };
 
@@ -107,9 +112,11 @@
         };
 
         const animate = () => {
+            // Вращение электронов по орбитам
             electrons.forEach(el => {
                 el.pivot.rotation.z += el.speed;
             });
+            // Рендеринг кадра
             renderer.render(scene, camera);
         };
 
