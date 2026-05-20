@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
     <meta charset="utf-8">
-    <title>WebXR Lithium Atom - Fixed</title>
+    <title>WebXR Lithium Atom - Lab 3</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    </style>
     <script type="importmap">
     {
       "imports": {
@@ -12,19 +15,14 @@
       }
     }
     </script>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: transparent; }
-        canvas { display: block; }
-    </style>
 </head>
 <body>
     <script type="module">
         import * as THREE from 'three';
         import { ARButton } from 'three/addons/webxr/ARButton.js';
 
-        let scene, camera, renderer;
+        let camera, scene, renderer;
         let electrons = [];
-        let atomGroup;
 
         const init = () => {
             // 1. Создаем сцену
@@ -33,46 +31,39 @@
             // 2. Настраиваем камеру
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // 3. Рендерер с жесткими параметрами для мобильного AR
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Ограничиваем для производительности телефона
+            // 3. Настраиваем рендерер с поддержкой XR (AR)
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true; // Принудительный запуск XR-модуля
+            renderer.xr.enabled = true; // Важно для WebXR
             document.body.appendChild(renderer.domElement);
 
-            // 4. Добавляем кнопку AR с явным указанием необходимых функций (features)
-            // Это заставляет браузер жестко запросить у системы доступ к камере реального мира
-            const arButton = ARButton.createButton(renderer, {
-                requiredFeatures: ['local-floor'] 
-            });
-            document.body.appendChild(arButton);
+            // 4. Добавляем кнопку ARButton на экран
+            document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['local'] }));
 
-            // Освещение сцены
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1.5);
+            // 5. Освещение
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
             scene.add(light);
 
-            // Создаем группу для атома
-            atomGroup = new THREE.Group();
-            atomGroup.scale.set(0.12, 0.12, 0.12); // Чуть уменьшили, чтобы модель гарантированно влезла в экран
-            
-            /* ВАЖНОЕ ИЗМЕНЕНИЕ: В WebXR точка (0,0,0) — это место, где физически лежит телефон в момент нажатия кнопки.
-               Мы вешаем атом чуть выше уровня груди (y: 0.2) и отодвигаем на 1.2 метра вперед (z: -1.2).
-            */
-            atomGroup.position.set(0, 0.2, -1.2); 
+            // 6. Создаем группу для атома и отодвигаем её немного назад и вниз (-1.5 метра по Z, -0.2 по Y),
+            // чтобы объект сразу появился перед глазами пользователя, а не внутри камеры.
+            const atomGroup = new THREE.Group();
+            atomGroup.position.set(0, -0.2, -1.5); 
+            atomGroup.scale.set(0.15, 0.15, 0.15); 
             scene.add(atomGroup);
 
-            // Ядро атома (Стандартный материал)
+            // 7. Текстура ядра (Заменена на процедурную заглушку, так как на GitHub Pages может не быть вашего файла)
             const coreGeom = new THREE.SphereGeometry(0.7, 32, 32);
             const coreMat = new THREE.MeshStandardMaterial({
-                color: 0x4444ff,
-                emissive: 0x111133,
-                roughness: 0.3,
+                color: 0x8888ff,
+                emissive: 0x222244,
+                roughness: 0.4,
                 metalness: 0.2
             });
             const core = new THREE.Mesh(coreGeom, coreMat);
             atomGroup.add(core);
 
-            // Функция для создания электронных систем
+            // 8. Функция генерации электронов
             const createElectronSystem = (color, tiltZ, speed) => {
                 const tiltGroup = new THREE.Group();
                 tiltGroup.rotation.z = tiltZ;
@@ -82,7 +73,7 @@
                 tiltGroup.add(ellipseContainer);
 
                 const torusGeom = new THREE.TorusGeometry(5, 0.03, 16, 100);
-                const torusMat = new THREE.MeshBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.5 });
+                const torusMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
                 const torus = new THREE.Mesh(torusGeom, torusMat);
                 ellipseContainer.add(torus);
 
@@ -90,7 +81,7 @@
                 ellipseContainer.add(electronPivot);
 
                 const elGeom = new THREE.SphereGeometry(0.25, 16, 16);
-                const elMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.6 });
+                const elMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.5 });
                 const electron = new THREE.Mesh(elGeom, elMat);
                 electron.position.set(5, 0, 0); 
                 electronPivot.add(electron);
@@ -100,17 +91,18 @@
                 return { pivot: electronPivot, speed: speed };
             };
 
-            // Создаем электроны
+            // Создаем 3 электрона
             electrons = [
-                createElectronSystem(0xff0000, 0, 0.02),                   
+                createElectronSystem(0xff0000, 0, 0.02),                  
                 createElectronSystem(0x0000ff, Math.PI / 3, 0.015),        
                 createElectronSystem(0x00ff00, (Math.PI * 2) / 3, 0.01)    
             ];
 
+            // Обработка изменения размеров экрана
             window.addEventListener('resize', onWindowResize);
 
-            // Запускаем цикл рендеринга
-            renderer.setAnimationLoop(animate);
+            // 9. Запуск цикла анимации через XR рендерер
+            renderer.setAnimationLoop(render);
         };
 
         const onWindowResize = () => {
@@ -119,18 +111,12 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         };
 
-        const animate = (timestamp, frame) => {
-            // Вращение электронов
+        const render = () => {
+            // Анимация вращения электронов
             electrons.forEach(el => {
                 el.pivot.rotation.z += el.speed;
             });
 
-            // Плавное медленное вращение самого ядра для динамики в AR
-            if (atomGroup) {
-                atomGroup.rotation.y += 0.005;
-            }
-
-            // Рендерим кадр
             renderer.render(scene, camera);
         };
 
