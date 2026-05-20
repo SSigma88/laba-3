@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>lab3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+    </style>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'three';
+        import { ARButton } from 'three/addons/webxr/ARButton.js';
+
+        let scene, camera, renderer;
+        let electrons = [];
+
+        const init = () => {
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            document.body.appendChild(ARButton.createButton(renderer));
+
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            scene.add(light);
+
+            const atomGroup = new THREE.Group();
+            atomGroup.scale.set(0.15, 0.15, 0.15); 
+            
+           
+            atomGroup.position.set(0, 0, -1.5); 
+            scene.add(atomGroup);
+
+           
+            const textureLoader = new THREE.TextureLoader();
+            const waterNormals = textureLoader.load('waternormals.jpg');
+
+            const coreGeom = new THREE.SphereGeometry(0.7, 32, 32);
+            const coreMat = new THREE.MeshStandardMaterial({
+                color: 0x8888ff,
+                emissive: 0x222244,
+                normalMap: waterNormals,
+                normalScale: new THREE.Vector2(1, 1),
+            });
+            const core = new THREE.Mesh(coreGeom, coreMat);
+            atomGroup.add(core);
+
+            const createElectronSystem = (color, tiltZ, speed) => {
+                const tiltGroup = new THREE.Group();
+                tiltGroup.rotation.z = tiltZ;
+
+                const ellipseContainer = new THREE.Group();
+                ellipseContainer.scale.set(0.38, 1, 1); 
+                tiltGroup.add(ellipseContainer);
+
+                const torusGeom = new THREE.TorusGeometry(5, 0.03, 16, 100);
+                const torusMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4 });
+                const torus = new THREE.Mesh(torusGeom, torusMat);
+                ellipseContainer.add(torus);
+
+                const electronPivot = new THREE.Group();
+                ellipseContainer.add(electronPivot);
+
+                const elGeom = new THREE.SphereGeometry(0.25, 16, 16);
+                const elMat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.5 });
+                const electron = new THREE.Mesh(elGeom, elMat);
+                electron.position.set(5, 0, 0); 
+                electronPivot.add(electron);
+
+                atomGroup.add(tiltGroup);
+
+                return { pivot: electronPivot, speed: speed };
+            };
+
+            electrons = [
+                createElectronSystem(0xff0000, 0, 0.02),                   
+                createElectronSystem(0x0000ff, Math.PI / 3, 0.015),        
+                createElectronSystem(0x00ff00, (Math.PI * 2) / 3, 0.01)    
+            ];
+
+            window.addEventListener('resize', onWindowResize);
+
+            renderer.setAnimationLoop(animate);
+        };
+
+        const onWindowResize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+
+        const animate = () => {
+            electrons.forEach(el => {
+                el.pivot.rotation.z += el.speed;
+            });
+            renderer.render(scene, camera);
+        };
+
+        init();
+    </script>
+</body>
+</html>
