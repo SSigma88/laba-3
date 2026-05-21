@@ -35,7 +35,7 @@
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true; // Важно для WebXR
+            renderer.xr.enabled = true; 
             document.body.appendChild(renderer.domElement);
 
             // 4. Добавляем кнопку ARButton на экран
@@ -45,14 +45,13 @@
             const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
             scene.add(light);
 
-            // 6. Создаем группу для атома и отодвигаем её немного назад и вниз (-1.5 метра по Z, -0.2 по Y),
-            // чтобы объект сразу появился перед глазами пользователя, а не внутри камеры.
+            // 6. Создаем группу для атома
             const atomGroup = new THREE.Group();
             atomGroup.position.set(0, -0.2, -1.5); 
             atomGroup.scale.set(0.15, 0.15, 0.15); 
             scene.add(atomGroup);
 
-            // 7. Текстура ядра (Заменена на процедурную заглушку, так как на GitHub Pages может не быть вашего файла)
+            // 7. Ядро атома
             const coreGeom = new THREE.SphereGeometry(0.7, 32, 32);
             const coreMat = new THREE.MeshStandardMaterial({
                 color: 0x8888ff,
@@ -72,8 +71,15 @@
                 ellipseContainer.scale.set(0.38, 1, 1); 
                 tiltGroup.add(ellipseContainer);
 
-                const torusGeom = new THREE.TorusGeometry(5, 0.03, 16, 100);
-                const torusMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+                // ИСПРАВЛЕНО: Сделали орбиты яркими, цветными и слегка светящимися
+                const torusGeom = new THREE.TorusGeometry(5, 0.04, 16, 100);
+                const torusMat = new THREE.MeshStandardMaterial({ 
+                    color: color, 
+                    emissive: color,
+                    emissiveIntensity: 0.8,
+                    transparent: true, 
+                    opacity: 0.6 
+                });
                 const torus = new THREE.Mesh(torusGeom, torusMat);
                 ellipseContainer.add(torus);
 
@@ -91,17 +97,16 @@
                 return { pivot: electronPivot, speed: speed };
             };
 
-            // Создаем 3 электрона
+            // Создаем 3 электрона (Красный, Синий, Зеленый)
             electrons = [
                 createElectronSystem(0xff0000, 0, 0.02),                  
                 createElectronSystem(0x0000ff, Math.PI / 3, 0.015),        
                 createElectronSystem(0x00ff00, (Math.PI * 2) / 3, 0.01)    
             ];
 
-            // Обработка изменения размеров экрана
             window.addEventListener('resize', onWindowResize);
 
-            // 9. Запуск цикла анимации через XR рендерер
+            // 9. Запуск цикла анимации
             renderer.setAnimationLoop(render);
         };
 
