@@ -71,14 +71,13 @@
                 ellipseContainer.scale.set(0.38, 1, 1); 
                 tiltGroup.add(ellipseContainer);
 
-                // ИСПРАВЛЕНО: Сделали орбиты яркими, цветными и слегка светящимися
                 const torusGeom = new THREE.TorusGeometry(5, 0.04, 16, 100);
                 const torusMat = new THREE.MeshStandardMaterial({ 
-                    color: color, 
-                    emissive: color,
-                    emissiveIntensity: 0.8,
+                    color: 0x000000, 
+                    emissive: 0x000000,
+                    emissiveIntensity: 0.1,
                     transparent: true, 
-                    opacity: 0.6 
+                    opacity: 0.8 
                 });
                 const torus = new THREE.Mesh(torusGeom, torusMat);
                 ellipseContainer.add(torus);
